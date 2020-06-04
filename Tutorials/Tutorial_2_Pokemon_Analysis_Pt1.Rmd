@@ -1,0 +1,145 @@
+---
+title: 'STAT 341: Tutorial 2 -- Pokémon Analysis (Part 1)'
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+date: "Friday January 17, 2020"
+urlcolor: blue
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+In this document we begin to take a look at the `pokemon.csv` dataset introduced in the first lecture. This exercise is intended to provide additional exposure to R and Markdown.
+
+**Load in the data and summarize it**
+```{r, echo=TRUE, eval=TRUE}
+poke <- read.csv("/Users/nstevens/Dropbox/Teaching/STAT_341/Tutorials/Tutorial 2/pokemon.csv", 
+                 header = TRUE)
+```
+
+Now that we've loaded the data, let's look at a summary of it:
+```{r, echo=FALSE, eval=TRUE}
+summary(poke)
+```
+
+For purposes of the tutorial, let's examine the `base_happiness`, `speed`, `height_m` and `weight_kg` variates more closely. Here are the values of these variates for the first 15 Pokémon:
+```{r}
+head(x = poke[,c(4, 8, 9, 10)], n = 15)
+```
+
+Let's construct a $4 \times 4$ matrix of plots that visually summarize these:
+```{r, echo=TRUE, eval=TRUE, fig.align='center', fig.height=8, fig.width=8}
+poke_df_for_plot <- poke[,c(4, 8, 9, 10)]
+header <- names(poke_df_for_plot)
+par(mfrow = c(4,4))
+for(i in 1:4){
+  for(j in 1:4){
+    if(i == j){
+      hist(poke_df_for_plot[,i], main = "", xlab = header[i], col = "dodgerblue3")
+    }else{
+      plot(x = poke_df_for_plot[,i], y = poke_df_for_plot[,j],
+           xlab = header[i], ylab = header[j],
+           pch = 16, col = adjustcolor(col = "dodgerblue4", alpha.f = 0.3))
+    }
+  }
+}
+```
+
+Since `base_happiness` takes on just a handful of integer values, let's _jitter_ this variate to try and make the plots more informative.
+```{r, fig.align='center', fig.height=8, fig.width=8}
+poke_df_for_plot$base_happiness <- jitter(poke_df_for_plot$base_happiness, factor = 3)
+par(mfrow = c(4,4))
+for(i in 1:4){
+  for(j in 1:4){
+    if(i == j){
+      hist(poke_df_for_plot[,i], main = "", xlab = header[i], col = "dodgerblue3")
+    }else{
+      plot(x = poke_df_for_plot[,i], y = poke_df_for_plot[,j],
+           xlab = header[i], ylab = header[j],
+           pch = 16, col = adjustcolor(col = "dodgerblue4", alpha.f = 0.3))
+    }
+  }
+}
+```
+
+Let's also calculate the correlations between these variables:
+```{r, echo=FALSE, eval=TRUE}
+cor(poke[,c(4, 8, 9, 10)])
+```
+
+**Questions:**
+
+1. Do faster Pokémon tend to be happier?
+2. Do taller Pokémon tend to be happier?
+3. Do heavier Pokémon tend to be happier?
+
+**Answers:**
+
+1. No
+2. No
+3. No
+
+**Who is the tallest Pokémon?**
+```{r}
+# this is the maximum height:
+max(poke$height_m)
+# this is the row in the dataset in which the maximum height is found:
+which(poke$height_m == max(poke$height_m))
+# this is the corresponding Pokémon:
+poke$name[which(poke$height_m == max(poke$height_m))]
+```
+
+Note that in the code above, rather than the call
+```{r, eval=FALSE}
+which(poke$height_m == max(poke$height_m))
+```
+
+we could have equivalently used
+```{r, eval=FALSE}
+which.max(poke$height_m)
+```
+
+**Which are the 10 heaviest Pokémon?**
+```{r}
+# these are the weights sorted from largest to smallest
+sort(x = poke$weight_kg, decreasing = TRUE)
+# these are the 10 largest recorded weights
+sort(x = poke$weight_kg, decreasing = TRUE)[1:10]
+# these are the rows containing the 10 largest recorded weights
+which(poke$weight_kg >= sort(x = poke$weight_kg, decreasing = TRUE)[10])
+# these are the corresponding Pokémon
+poke$name[which(poke$weight_kg >= sort(x = poke$weight_kg, decreasing = TRUE)[10])]
+```
+
+**Construct a histogram of `hp` with the mean identified**
+```{r, fig.align='center'}
+hist(x = poke$hp, col = "mistyrose", main = "Histogram of HP", xlab = "HP")
+abline(v = mean(poke$hp), col = "navyblue", lwd = 2)
+text(x = 70, y = 200, labels = paste("Mean = ", round(mean(poke$hp), 2)),
+     col = "navyblue", pos = 4)
+```
+
+**Plot the influence ($\Delta$) of each Pokémon on the average `hp`**
+```{r, fig.align='center'}
+y <- poke$hp
+delta <- (y-mean(y))/(length(y)-1)
+par(mfrow = c(1,2))
+plot(delta,
+     main = "Influence for Average HP", ylab = bquote(Delta),
+     pch = 16, col = adjustcolor("mediumvioletred", 0.3))
+plot(y, delta,
+     main = "Influence vs. HP", ylab = bquote(Delta), xlab = "HP",
+     pch = 16, col = adjustcolor("mediumvioletred", 0.3))
+```
+
+**Which two Pokémon have the largest influence?**
+```{r}
+poke$name[which(delta > 0.2)]
+```
+**Which two Pokémon have the highest HP?**
+```{r}
+poke$name[order(poke$hp, decreasing = TRUE)][1:2]
+```
